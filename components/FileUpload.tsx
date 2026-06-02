@@ -14,11 +14,27 @@ export default function FileUpload() {
     const formData = new FormData();
     formData.append("file", file);
 
+    // Step 1: Upload the file
     const res = await fetch("/api/upload", { method: "POST", body: formData });
     const data = await res.json();
 
     if (data.success) {
-      setMessage("Uploaded successfully!");
+      setMessage("Uploaded! Extracting text...");
+
+      // Step 2: Process the file (extract text)
+      const processRes = await fetch(`/api/process/${data.documentId}`, {
+        method: "POST",
+      });
+      const processData = await processRes.json();
+
+      if (processData.success) {
+        setMessage("Done! Text extracted successfully ✅");
+      } else {
+        setMessage(
+          `Uploaded but text extraction failed: ${processData.error || "Unknown error"}`
+        );
+      }
+
       router.refresh();
     } else {
       setMessage("Upload failed. Try again.");

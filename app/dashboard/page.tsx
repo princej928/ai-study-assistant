@@ -21,15 +21,25 @@ export default async function DashboardPage() {
           <p className="text-gray-400 text-center mt-6">No files uploaded yet.</p>
         )}
         {docs.map((doc: any) => (
-          <div key={doc._id.toString()} className="bg-white border rounded-xl p-4 flex items-center justify-between shadow-sm">
-            <div>
-              <p className="font-semibold">{doc.fileName}</p>
-              <p className="text-sm text-gray-400">{doc.fileType} · {doc.status}</p>
+          <div key={doc._id.toString()} className="bg-white border rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold">{doc.fileName}</p>
+                <p className="text-sm text-gray-400">{doc.fileType} · {doc.status}</p>
+              </div>
+              <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
+                className="text-blue-600 text-sm hover:underline shrink-0">
+                View
+              </a>
             </div>
-            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-              className="text-blue-600 text-sm hover:underline">
-              View
-            </a>
+            <div className="mt-3 border-t pt-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Extracted Text
+              </p>
+              <p className="mt-2 text-sm text-gray-700 whitespace-pre-line line-clamp-6">
+                {doc.extractedText?.trim() || "No readable text found yet."}
+              </p>
+            </div>
           </div>
         ))}
       </div>

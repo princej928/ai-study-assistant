@@ -38,5 +38,5 @@ export async function POST(req: NextRequest) {
     status: "uploaded",
   });
 
-  return NextResponse.json({ success: true, document: doc });
+  return NextResponse.json({ success: true, document: doc, documentId: doc._id });
 }
