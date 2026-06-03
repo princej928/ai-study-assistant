@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Document from "@/models/Document";
-import { extractText } from "unpdf";
-import Tesseract from "tesseract.js";
 
 export const runtime = "nodejs";
 
@@ -36,6 +34,7 @@ export async function POST(
     let extractedText = "";
 
     if (doc.fileType === "application/pdf") {
+      const { extractText } = await import("unpdf");
       const result = await extractText(new Uint8Array(fileBuffer), {
         mergePages: true,
       });
@@ -43,6 +42,7 @@ export async function POST(
         ? result.text.join("\n")
         : result.text;
     } else if (doc.fileType.startsWith("image/")) {
+      const Tesseract = (await import("tesseract.js")).default;
       const ocrResult = await Tesseract.recognize(fileBuffer, "eng");
       extractedText = ocrResult.data.text.trim();
     } else {

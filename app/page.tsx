@@ -8,5 +8,5 @@ export default async function Home() {
     redirect('/sign-in')
   }
 
-  return <div>Welcome! You are logged in.</div>
+  redirect('/dashboard')
 }
