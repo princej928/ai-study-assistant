@@ -10,6 +10,7 @@ const DocumentSchema = new mongoose.Schema({
   flashcards: { type: Array, default: [] },
   quiz: { type: Array, default: [] },
   status: { type: String, default: 'uploaded' },
+  error: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 })
 

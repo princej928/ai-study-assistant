@@ -21,66 +21,44 @@ export default function FileUpload() {
       const data = await res.json();
 
       if (data.success) {
-        setMessage("Uploaded! Extracting text...");
+        setMessage("Uploaded! Initiating background processing... 🚀");
 
-        // Step 2: Process the file (extract text)
+        // Step 2: Trigger server-side background processing
         const processRes = await fetch(`/api/process/${data.documentId}`, {
           method: "POST",
         });
-        if (!processRes.ok) throw new Error("Text extraction request failed.");
-        const processData = await processRes.json();
-
-        if (processData.success) {
-          setMessage("Text extracted! Generating summary...");
-
-          const summarizeRes = await fetch(`/api/summarize/${data.documentId}`, {
-            method: "POST",
-          });
-          if (!summarizeRes.ok) throw new Error("Summary generation request failed.");
-          const summarizeData = await summarizeRes.json();
-
-          if (summarizeData.success) {
-            setMessage("Summary generated! Creating flashcards...");
-
-            const flashcardsRes = await fetch(`/api/flashcards/${data.documentId}`, {
-              method: "POST",
-            });
-            if (!flashcardsRes.ok) throw new Error("Flashcards generation request failed.");
-            const flashcardsData = await flashcardsRes.json();
-
-            if (flashcardsData.success) {
-              setMessage("Flashcards generated! Creating quiz...");
-
-              const quizRes = await fetch(`/api/quiz/${data.documentId}`, {
-                method: "POST",
-              });
-              if (!quizRes.ok) throw new Error("Quiz generation request failed.");
-              const quizData = await quizRes.json();
-
-              if (quizData.success) {
-                setMessage("Done! Summary, Flashcards, & Quiz generated successfully ✅");
-              } else {
-                setMessage(
-                  `Flashcards generated, but quiz creation failed: ${quizData.error || "Unknown error"}`
-                );
-              }
-            } else {
-              setMessage(
-                `Summary generated, but flashcard creation failed: ${flashcardsData.error || "Unknown error"}`
-              );
-            }
-          } else {
-            setMessage(
-              `Text extracted, but summary failed: ${summarizeData.error || "Unknown error"}`
-            );
+        if (!processRes.ok) throw new Error("Could not initiate background processing.");
+        
+        // Helper function for delays
+        const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+        
+        // Step 3: Poll document status until completed or failed
+        let processingActive = true;
+        while (processingActive) {
+          await delay(2000);
+          
+          const statusRes = await fetch(`/api/documents/${data.documentId}`);
+          if (!statusRes.ok) throw new Error("Failed to check processing status.");
+          
+          const statusData = await statusRes.json();
+          if (!statusData.success) throw new Error(statusData.error || "Failed to check status.");
+          
+          const doc = statusData.document;
+          
+          if (doc.status === "extracting") {
+            setMessage("Extracting text from document... 📄");
+          } else if (doc.status === "summarizing") {
+            setMessage("Text extracted! Generating study summary... ✍️");
+          } else if (doc.status === "generating_assets") {
+            setMessage("Summary generated! Creating study flashcards & quizzes... 🧠");
+          } else if (doc.status === "completed") {
+            setMessage("Done! Summary, Flashcards, & Quiz generated successfully ✅");
+            processingActive = false;
+            router.refresh();
+          } else if (doc.status === "failed") {
+            throw new Error(doc.error || "Background processing failed.");
           }
-        } else {
-          setMessage(
-            `Uploaded but text extraction failed: ${processData.error || "Unknown error"}`
-          );
         }
-
-        router.refresh();
       } else {
         setMessage("Upload failed. Try again.");
       }

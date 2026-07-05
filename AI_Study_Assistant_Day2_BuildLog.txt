@@ -1,0 +1,311 @@
+AI Study Assistant
+Day 2 Build Log: File Upload System
+What was built, why it was built, how it works — with code explanations and key terms
+
+📋  Day 2 Overview
+Day 2 goal was to allow users to upload a PDF or image, store it securely in the cloud, save the file details to the database, and see all their uploads on a dashboard. By the end of Day 2, the full upload pipeline was working end-to-end.
+
+What Was Built
+Purpose
+lib/cloudinary.ts
+Connects the app to Cloudinary file storage using API keys
+lib/gemini.ts
+Sets up the Gemini AI model for later use in Days 3-5
+app/api/upload/route.ts
+Backend API that receives files, uploads to Cloudinary, saves to MongoDB
+components/FileUpload.tsx
+Drag-and-drop UI component users interact with to upload files
+app/dashboard/page.tsx
+Dashboard page showing all uploaded files with View links
+models/Document.ts
+Already existed — MongoDB schema that stores file metadata
+
+
+1.  Cloudinary Setup
+What is Cloudinary?
+Cloudinary is a cloud-based file storage service. When a user uploads a PDF or image, the file needs to be saved somewhere permanent. Cloudinary acts like a file server — it stores the actual file and gives back a URL that can be saved in the database.
+
+Why Cloudinary and not MongoDB?
+MongoDB has a 16MB document size limit and is designed for structured data (text, numbers, arrays), not binary files. Storing files directly in MongoDB would make the database slow and hit size limits quickly. The correct pattern is:
+
+	•	Store the file itself → Cloudinary (file storage)
+	•	Store file metadata (name, URL, type) → MongoDB (database)
+
+Key Terms
+
+CDN
+Content Delivery Network — Cloudinary serves files from servers closest to the user, making loading faster worldwide
+
+secure_url
+The HTTPS link Cloudinary returns after uploading a file. This URL is what gets saved in MongoDB and used to display/download the file
+
+resource_type: auto
+Tells Cloudinary to automatically detect whether the upload is an image, PDF, video, etc. instead of manually specifying
+
+upload_stream
+A method that accepts file data as a stream of bytes rather than a complete file, which is more memory-efficient for large files
+
+The Code — lib/cloudinary.ts
+This file initialises the Cloudinary SDK with your account credentials from environment variables. It is exported so any API route can import and use it.
+
+import { v2 as cloudinary } from "cloudinary";
+ 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
+ 
+export default cloudinary;
+
+The exclamation mark (!) after each environment variable is TypeScript syntax meaning 'I guarantee this value exists' — it prevents TypeScript from throwing a type error about potentially undefined values.
+
+
+2.  Gemini AI Setup
+What is the Gemini API?
+Gemini is Google's AI model — similar to ChatGPT but made by Google. It is used in Days 3-5 to read the extracted text from uploaded documents and generate summaries, flashcards, and quiz questions. The lib/gemini.ts file set up on Day 2 is preparation for that.
+
+Why Gemini instead of Claude or GPT?
+	•	100% free — no credit card required
+	•	Google account sign-in only
+	•	Free tier: 15 requests/minute, 1 million tokens/day
+	•	More than enough for a portfolio project with low usage
+
+Key Terms
+
+Token
+The unit AI models use to measure text. Roughly 1 token = 4 characters or 0.75 words. A typical page of notes = ~500 tokens
+
+gemini-1.5-flash
+The specific Gemini model used — it is fast, accurate, and has the most generous free tier limits
+
+getGenerativeModel
+The Gemini SDK method that initialises a specific AI model and returns an object you can use to send prompts
+
+The Code — lib/gemini.ts
+import { GoogleGenerativeAI } from "@google/generative-ai";
+ 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+ 
+export const geminiModel = genAI.getGenerativeModel({ 
+  model: "gemini-1.5-flash" 
+});
+ 
+export default genAI;
+
+
+3.  Upload API Route
+What is an API Route in Next.js?
+In Next.js, files inside app/api/ are backend endpoints — they run on the server, not in the browser. When the frontend sends a request to /api/upload, this file handles it. The user never sees this code; it runs invisibly on the server.
+
+What does this route do?
+	•	Step 1: Checks the user is logged in using Clerk auth()
+	•	Step 2: Reads the uploaded file from the request
+	•	Step 3: Converts the file to a Buffer (raw bytes)
+	•	Step 4: Uploads the Buffer to Cloudinary using upload_stream
+	•	Step 5: Gets back the secure_url from Cloudinary
+	•	Step 6: Saves file metadata to MongoDB using the Document model
+	•	Step 7: Returns success and the saved document to the frontend
+
+Key Terms
+
+FormData
+A browser API for sending files and data together in one HTTP request. The frontend wraps the file in FormData before sending it to the API route
+
+ArrayBuffer
+A raw binary data format. Files are converted to ArrayBuffer first, then to Node.js Buffer before uploading to Cloudinary
+
+Buffer
+Node.js's way of handling binary data like files. Cloudinary's upload_stream requires the file as a Buffer
+
+Promise
+JavaScript's way of handling async operations. The Cloudinary upload uses a Promise wrapper because upload_stream uses callbacks, not async/await natively
+
+upsert
+A MongoDB operation meaning 'update if exists, insert if not'. Used in the User model to avoid creating duplicate records
+
+auth()
+Clerk's server-side function that reads the session and returns the userId. If no user is logged in, userId is null
+
+The Code — app/api/upload/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import cloudinary from "@/lib/cloudinary";
+import connectDB from "@/lib/mongodb";
+import Document from "@/models/Document";
+ 
+export async function POST(req: NextRequest) {
+  // 1. Check user is logged in
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json(
+    { error: "Unauthorized" }, { status: 401 }
+  );
+ 
+  // 2. Read the file from the request
+  const formData = await req.formData();
+  const file = formData.get("file") as File;
+  if (!file) return NextResponse.json(
+    { error: "No file provided" }, { status: 400 }
+  );
+ 
+  // 3. Convert file to Buffer
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+ 
+  // 4 & 5. Upload to Cloudinary, get back URL
+  const uploadResult = await new Promise<any>((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { resource_type: "auto", folder: "ai-study-assistant" },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    ).end(buffer);
+  });
+ 
+  // 6 & 7. Save metadata to MongoDB and return
+  await connectDB();
+  const doc = await Document.create({
+    userId,
+    fileName: file.name,
+    fileUrl: uploadResult.secure_url,
+    fileType: file.type,
+    status: "uploaded",
+  });
+ 
+  return NextResponse.json({ success: true, document: doc });
+}
+
+
+4.  FileUpload Component
+What is a React Component?
+A component is a reusable piece of UI. The FileUpload component is the drag-and-drop box users see on the dashboard. It is a separate file so it can be imported and reused anywhere in the app.
+
+What does this component do?
+	•	Shows a dashed border box with 'Drag & drop a PDF or image here'
+	•	Turns blue when the user drags a file over it
+	•	Has a Browse File button as an alternative to drag and drop
+	•	When a file is selected, calls handleUpload() which sends it to /api/upload
+	•	Shows 'Uploading...' during the request and 'Uploaded successfully!' on completion
+	•	Calls router.refresh() to reload the dashboard and show the new file
+
+Key Terms
+
+useState
+React hook for storing values that change over time (like uploading: true/false). When state changes, the component re-renders automatically
+
+useCallback
+React hook that memoizes a function so it is not recreated on every render. Used for the onDrop handler to avoid performance issues
+
+useRouter
+Next.js hook that gives access to the router. router.refresh() re-fetches the server data without a full page reload
+
+onDragOver / onDrop
+Browser events for drag-and-drop. onDragOver fires while dragging over the element, onDrop fires when the file is released
+
+e.preventDefault()
+Stops the browser's default behaviour of opening/displaying the dropped file instead of passing it to your handler
+
+"use client"
+A Next.js directive that marks a component as a Client Component — meaning it runs in the browser and can use React hooks like useState
+
+
+
+5.  Dashboard Page
+What does the dashboard do?
+The dashboard is the main page users see after logging in. It shows the FileUpload component at the top and lists all previously uploaded files below. Each file shows its name, type, status, and a View link that opens the file from Cloudinary.
+
+How does it fetch the user's files?
+The dashboard is a Server Component — it runs on the server before the page is sent to the browser. This means it can directly query MongoDB without needing a separate API call. It fetches only documents where userId matches the logged-in user.
+
+Key Terms
+
+Server Component
+A Next.js component that runs on the server. It can access databases and APIs directly. No JavaScript is sent to the browser for these components
+
+.lean()
+A Mongoose method that returns plain JavaScript objects instead of full Mongoose documents. Faster and uses less memory — good practice for read-only queries
+
+.sort({ createdAt: -1 })
+Sorts results by creation date newest first. -1 = descending order, 1 = ascending order
+
+redirect()
+Next.js function that sends the user to a different page. Used here to send unauthenticated users to /sign-in
+
+_id.toString()
+MongoDB stores IDs as ObjectId objects, not strings. React requires string keys, so .toString() converts the ID to a plain string
+
+
+
+6.  The Complete Upload Flow
+This is exactly what happens from the moment a user drops a file to the moment it appears in their dashboard:
+
+Step
+Where
+What Happens
+1
+Browser (FileUpload.tsx)
+User drops file or clicks Browse. File is wrapped in FormData
+2
+Browser → Server
+fetch('/api/upload') sends POST request with FormData
+3
+Server (route.ts)
+auth() verifies user is logged in, gets userId
+4
+Server (route.ts)
+File is read from FormData, converted to ArrayBuffer then Buffer
+5
+Server → Cloudinary
+Buffer uploaded via upload_stream, gets back secure_url
+6
+Server → MongoDB
+Document.create() saves fileName, fileUrl, fileType, userId, status
+7
+Server → Browser
+Returns { success: true, document: {...} }
+8
+Browser (FileUpload.tsx)
+Shows 'Uploaded successfully!', calls router.refresh()
+9
+Browser (dashboard)
+Page re-fetches from MongoDB, new file appears in the list
+
+
+7.  Environment Variables Added
+Environment variables are secret keys stored in .env.local — they are never pushed to GitHub. They are also added to Vercel so the deployed app works.
+
+Variable
+What It Is For
+CLOUDINARY_CLOUD_NAME
+Your Cloudinary account name — identifies which account to upload files to
+CLOUDINARY_API_KEY
+Public key for Cloudinary authentication
+CLOUDINARY_API_SECRET
+Secret key for Cloudinary — never expose this in frontend code
+GEMINI_API_KEY
+Google AI Studio key — used to call the Gemini AI model for summaries, flashcards, quiz
+MONGODB_URI
+MongoDB Atlas connection string — used to connect to the cloud database
+
+
+8.  Day 2 Complete — What's Next
+✅  Day 2 is fully working and deployed to Vercel
+User can log in → upload a PDF or image → file saves to Cloudinary → metadata saves to MongoDB → file appears in dashboard with a View link.
+
+
+Day 3 will take this further by extracting the text content from the uploaded PDF using the pdf-parse library. The extracted text will be saved to the extractedText field in MongoDB, which is the foundation for the AI features in Days 4 and 5.
+
+Day 3 — Text Extraction
+Use pdf-parse to extract text from uploaded PDFs, save to MongoDB
+Day 4 — AI Features
+Send extracted text to Gemini API, generate summary and flashcards
+Day 5 — Quiz Generator
+Generate MCQ quiz from notes, build interactive quiz UI
+Day 6 — UI Polish
+Loading states, error handling, full flow testing
+Day 7 — Deploy + README
+Final Vercel deploy, README with screenshots and demo GIF
+
+
+AI Study Assistant — Day 2 Build Log
