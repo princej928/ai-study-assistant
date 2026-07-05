@@ -5,6 +5,8 @@ import connectDB from "@/lib/mongodb";
 import Document from "@/models/Document";
 import FileUpload from "@/components/FileUpload";
 import DocumentCard from "@/components/DocumentCard";
+import { Flashcard } from "@/components/FlashcardViewer";
+import { QuizQuestion } from "@/components/QuizPlayer";
 
 interface DashboardDocument {
   _id: string;
@@ -13,8 +15,8 @@ interface DashboardDocument {
   fileType: string;
   extractedText: string;
   summary: string;
-  flashcards: unknown[];
-  quiz: unknown[];
+  flashcards: Flashcard[];
+  quiz: QuizQuestion[];
   status: string;
 }
 
