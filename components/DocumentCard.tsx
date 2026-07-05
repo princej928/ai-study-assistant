@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import FlashcardViewer from "./FlashcardViewer";
+import FlashcardViewer, { Flashcard } from "./FlashcardViewer";
 import QuizPlayer, { QuizQuestion } from "./QuizPlayer";
-
-interface Flashcard {
-  question: string;
-  answer: string;
-}
 
 interface Doc {
   _id: string;
@@ -48,7 +43,7 @@ export default function DocumentCard({ document }: DocumentCardProps) {
       } else {
         alert(data.error || "Failed to delete document");
       }
-    } catch (err) {
+    } catch {
       alert("Error deleting document");
     } finally {
       setDeleting(false);
@@ -66,7 +61,7 @@ export default function DocumentCard({ document }: DocumentCardProps) {
       } else {
         alert(data.error || "Failed to generate summary");
       }
-    } catch (err) {
+    } catch {
       alert("Error generating summary");
     } finally {
       setGeneratingSummary(false);
@@ -84,7 +79,7 @@ export default function DocumentCard({ document }: DocumentCardProps) {
       } else {
         alert(data.error || "Failed to generate flashcards");
       }
-    } catch (err) {
+    } catch {
       alert("Error generating flashcards");
     } finally {
       setGeneratingFlashcards(false);
@@ -102,7 +97,7 @@ export default function DocumentCard({ document }: DocumentCardProps) {
       } else {
         alert(data.error || "Failed to generate quiz");
       }
-    } catch (err) {
+    } catch {
       alert("Error generating quiz");
     } finally {
       setGeneratingQuiz(false);
@@ -285,7 +280,11 @@ export default function DocumentCard({ document }: DocumentCardProps) {
                 <p className="mt-3 text-sm text-gray-500">Generating 10 flashcards using Gemini...</p>
               </div>
             ) : flashcards && flashcards.length > 0 ? (
-              <FlashcardViewer flashcards={flashcards} />
+              <FlashcardViewer
+                documentId={document._id}
+                flashcards={flashcards}
+                onFlashcardsUpdate={setFlashcards}
+              />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center py-10 border border-dashed border-gray-200 rounded-xl bg-gray-50/30">
                 <p className="text-gray-400 text-sm mb-4">No flashcards generated for this document yet.</p>

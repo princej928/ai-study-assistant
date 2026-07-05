@@ -6,6 +6,8 @@ export default function FileUpload() {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [quizCount, setQuizCount] = useState(5);
+  const [difficulty, setDifficulty] = useState("Medium");
   const router = useRouter();
 
   const handleUpload = async (file: File) => {
@@ -26,6 +28,8 @@ export default function FileUpload() {
         // Step 2: Trigger server-side background processing
         const processRes = await fetch(`/api/process/${data.documentId}`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quizCount, difficulty }),
         });
         if (!processRes.ok) throw new Error("Could not initiate background processing.");
         
@@ -116,6 +120,42 @@ export default function FileUpload() {
 
   return (
     <div className="w-full max-w-xl mx-auto">
+      {/* Quiz & Study Settings */}
+      <div className="mb-6 p-4 bg-white/70 border border-slate-100 rounded-2xl flex flex-col sm:flex-row gap-4 justify-between items-center shadow-sm backdrop-blur-sm">
+        <div className="flex flex-col gap-1 text-left w-full sm:w-auto">
+          <span className="text-slate-700 font-semibold text-sm">Study Material Settings</span>
+          <span className="text-slate-400 text-xs">Configure the generation of study resources</span>
+        </div>
+        <div className="flex gap-3 w-full sm:w-auto justify-end">
+          <div className="flex flex-col gap-1 text-left">
+            <label className="text-slate-500 font-semibold text-[10px] uppercase tracking-wider">Quiz Questions</label>
+            <select
+              value={quizCount}
+              onChange={(e) => setQuizCount(Number(e.target.value))}
+              disabled={uploading}
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-indigo-500 transition-all cursor-pointer disabled:cursor-not-allowed"
+            >
+              <option value={5}>5 Questions</option>
+              <option value={10}>10 Questions</option>
+              <option value={15}>15 Questions</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1 text-left">
+            <label className="text-slate-500 font-semibold text-[10px] uppercase tracking-wider">Difficulty</label>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value)}
+              disabled={uploading}
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-indigo-500 transition-all cursor-pointer disabled:cursor-not-allowed"
+            >
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}

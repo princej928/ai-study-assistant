@@ -3,8 +3,18 @@ import { auth } from "@clerk/nextjs/server";
 import connectDB from "@/lib/mongodb";
 import Document from "@/models/Document";
 import { geminiModel } from "@/lib/gemini";
+import { z } from "zod";
 
 export const runtime = "nodejs";
+
+const FlashcardSchema = z.object({
+  question: z.string().min(1, "Question cannot be empty"),
+  answer: z.string().min(1, "Answer cannot be empty"),
+});
+const FlashcardsArraySchema = z.array(FlashcardSchema);
+
+const DEFAULT_EASE_FACTOR = 2.5;
+const DEFAULT_INTERVAL_DAYS = 1;
 
 export async function POST(
   _req: NextRequest,
@@ -60,7 +70,21 @@ ${inputText}
     });
 
     const responseText = result.response.text().trim();
-    const flashcards = JSON.parse(responseText);
+    const rawFlashcards = JSON.parse(responseText);
+    const flashcardsValidation = FlashcardsArraySchema.safeParse(rawFlashcards);
+
+    if (!flashcardsValidation.success) {
+      console.error("Flashcards validation error details:", flashcardsValidation.error);
+      throw new Error("AI generated flashcards did not match required format.");
+    }
+
+    const flashcards = flashcardsValidation.data.map((card) => ({
+      ...card,
+      repetitions: 0,
+      interval: DEFAULT_INTERVAL_DAYS,
+      easeFactor: DEFAULT_EASE_FACTOR,
+      nextReviewDate: new Date(),
+    }));
 
     await Document.findByIdAndUpdate(id, {
       flashcards,

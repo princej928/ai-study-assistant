@@ -3,11 +3,29 @@ import { auth } from "@clerk/nextjs/server";
 import connectDB from "@/lib/mongodb";
 import Document from "@/models/Document";
 import { geminiModel } from "@/lib/gemini";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
+// Zod validation schemas
+const FlashcardSchema = z.object({
+  question: z.string().min(1, "Question cannot be empty"),
+  answer: z.string().min(1, "Answer cannot be empty"),
+});
+const FlashcardsArraySchema = z.array(FlashcardSchema);
+
+const QuizQuestionSchema = z.object({
+  question: z.string().min(1, "Question cannot be empty"),
+  options: z.array(z.string().min(1, "Option cannot be empty")).length(4),
+  correctAnswer: z.string().min(1, "Correct answer cannot be empty"),
+});
+const QuizArraySchema = z.array(QuizQuestionSchema);
+
+const DEFAULT_EASE_FACTOR = 2.5;
+const DEFAULT_INTERVAL_DAYS = 1;
+
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -18,6 +36,11 @@ export async function POST(
     }
 
     const { id } = await params;
+
+    // Parse options from body (with fallback defaults)
+    const body = await req.json().catch(() => ({}));
+    const quizCount = Number(body.quizCount) || 5;
+    const difficulty = body.difficulty || "Medium";
 
     await connectDB();
 
@@ -87,6 +110,7 @@ You are helping a student study from their notes.
 
 Summarize the following study material into a clear, concise, exam-ready summary.
 Keep it easy to revise from.
+Make the summary of ${difficulty} difficulty in terms of depth.
 
 Rules:
 - Use simple language
@@ -111,7 +135,8 @@ ${inputText}
         const flashcardsPrompt = `
 You are helping a student study from their notes.
 
-Generate exactly 10 flashcard question and answer pairs from the following study material. 
+Generate exactly 10 flashcard question and answer pairs from the following study material.
+The questions should be of ${difficulty} difficulty.
 Each flashcard should test a key concept, definition, formula, or fact from the material. Keep questions concise and answers clear.
 
 Return the result as a JSON array of objects, where each object has "question" and "answer" keys.
@@ -123,7 +148,8 @@ ${inputText}
         const quizPrompt = `
 You are helping a student test their knowledge of their notes.
 
-Generate exactly 5 multiple choice questions (MCQs) from the following study material. 
+Generate exactly ${quizCount} multiple choice questions (MCQs) from the following study material.
+The questions should have a difficulty level of: ${difficulty}.
 Each question must have exactly 4 options, and there must be one correct answer which is an exact string match with one of the options.
 
 Return the result as a JSON array of objects, where each object has these exact keys:
@@ -150,8 +176,29 @@ ${inputText}
           })
         ]);
 
-        const flashcards = JSON.parse(flashcardsRes.response.text().trim());
-        const quiz = JSON.parse(quizRes.response.text().trim());
+        // Parse and validate flashcards with Zod
+        const rawFlashcards = JSON.parse(flashcardsRes.response.text().trim());
+        const flashcardsVal = FlashcardsArraySchema.safeParse(rawFlashcards);
+        if (!flashcardsVal.success) {
+          console.error("Flashcards validation error details:", flashcardsVal.error);
+          throw new Error("AI generated flashcards did not match required format.");
+        }
+        const flashcards = flashcardsVal.data.map((card) => ({
+          ...card,
+          repetitions: 0,
+          interval: DEFAULT_INTERVAL_DAYS,
+          easeFactor: DEFAULT_EASE_FACTOR,
+          nextReviewDate: new Date(),
+        }));
+
+        // Parse and validate quiz with Zod
+        const rawQuiz = JSON.parse(quizRes.response.text().trim());
+        const quizVal = QuizArraySchema.safeParse(rawQuiz);
+        if (!quizVal.success) {
+          console.error("Quiz validation error details:", quizVal.error);
+          throw new Error("AI generated quiz did not match required format.");
+        }
+        const quiz = quizVal.data;
 
         // Update database with completed status and all generated assets
         await Document.findByIdAndUpdate(id, {
@@ -164,7 +211,7 @@ ${inputText}
         console.error("Background processing error:", err);
         const errorMessage =
           err instanceof Error ? err.message : "An unknown error occurred during background processing";
-        
+
         await Document.findByIdAndUpdate(id, {
           status: "failed",
           error: errorMessage,
