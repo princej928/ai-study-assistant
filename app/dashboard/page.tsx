@@ -6,6 +6,18 @@ import Document from "@/models/Document";
 import FileUpload from "@/components/FileUpload";
 import DocumentCard from "@/components/DocumentCard";
 
+interface DashboardDocument {
+  _id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  extractedText: string;
+  summary: string;
+  flashcards: unknown[];
+  quiz: unknown[];
+  status: string;
+}
+
 export default async function DashboardPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -16,7 +28,7 @@ export default async function DashboardPage() {
   const rawDocs = await Document.find({ userId }).sort({ createdAt: -1 }).lean();
   
   // Serialize Mongo documents for Client Components
-  const docs = rawDocs.map((doc: any) => ({
+  const docs: DashboardDocument[] = rawDocs.map((doc) => ({
     _id: doc._id.toString(),
     fileName: doc.fileName,
     fileUrl: doc.fileUrl,
@@ -29,9 +41,9 @@ export default async function DashboardPage() {
   }));
 
   const totalDocs = docs.length;
-  const totalFlashcards = docs.reduce((acc: number, doc: any) => acc + (doc.flashcards?.length || 0), 0);
-  const totalSummarized = docs.filter((doc: any) => !!doc.summary).length;
-  const totalQuizzes = docs.filter((doc: any) => doc.quiz && doc.quiz.length > 0).length;
+  const totalFlashcards = docs.reduce((acc, doc) => acc + doc.flashcards.length, 0);
+  const totalSummarized = docs.filter((doc) => !!doc.summary).length;
+  const totalQuizzes = docs.filter((doc) => doc.quiz.length > 0).length;
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -45,7 +57,7 @@ export default async function DashboardPage() {
               </svg>
             </div>
             <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-              BrainSync
+              StudyForge
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -73,7 +85,7 @@ export default async function DashboardPage() {
           <div className="z-10 shrink-0">
             <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 text-center shadow-lg">
               <p className="text-xs text-indigo-200 font-semibold uppercase tracking-wider">Plan</p>
-              <p className="text-lg font-bold mt-0.5">BrainSync Premium</p>
+              <p className="text-lg font-bold mt-0.5">StudyForge Premium</p>
             </div>
           </div>
           {/* Subtle background decoration */}
@@ -163,7 +175,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
             ) : (
-              docs.map((doc: any) => (
+              docs.map((doc) => (
                 <DocumentCard key={doc._id} document={doc} />
               ))
             )}

@@ -1,19 +1,19 @@
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 import AuthShell from "@/components/AuthShell";
 
 export default function Page() {
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Sign in to continue building summaries, quizzes, and smarter revision sessions."
-      footerText="New to StudyForge?"
-      footerHref="/sign-up"
-      footerLabel="Create an account"
+      title="Create your workspace"
+      subtitle="Start with one upload and turn your study material into a focused revision system."
+      footerText="Already have a StudyForge account?"
+      footerHref="/sign-in"
+      footerLabel="Sign in"
       authCard={
-        <SignIn
-          path="/sign-in"
+        <SignUp
+          path="/sign-up"
           routing="path"
-          signUpUrl="/sign-up"
+          signInUrl="/sign-in"
           fallbackRedirectUrl="/dashboard"
           appearance={{
             elements: {

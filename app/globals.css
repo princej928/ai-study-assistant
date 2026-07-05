@@ -3,16 +3,101 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --font-sans: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+.studyforge-display {
+  font-family: var(--font-display);
+}
+
+.studyforge-auth-shell {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(251, 191, 36, 0.2), transparent 18%),
+    radial-gradient(circle at 50% 14%, rgba(251, 191, 36, 0.16), transparent 28%),
+    linear-gradient(180deg, #16120f 0%, #1f1913 28%, #0f1722 100%);
+  position: relative;
+}
+
+.studyforge-auth-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, transparent 28%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 140px
+    );
+  pointer-events: none;
+}
+
+.studyforge-auth-glow {
+  position: absolute;
+  left: 50%;
+  top: 1.5rem;
+  width: min(42rem, 72vw);
+  height: min(42rem, 72vw);
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(254, 240, 138, 0.4) 0%, rgba(251, 191, 36, 0.1) 24%, transparent 70%);
+  filter: blur(12px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.studyforge-auth-panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+  backdrop-filter: blur(14px);
+  border-radius: 1.5rem;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
+}
+
+.studyforge-auth-card {
+  position: relative;
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 248, 240, 0.96)),
+    #fffaf2;
+  padding: 1.5rem;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.24) inset;
+}
+
+.studyforge-auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0.9rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(180, 83, 9, 0.08);
+  pointer-events: none;
+}
+
+@media (max-width: 1023px) {
+  .studyforge-auth-shell {
+    background:
+      radial-gradient(circle at 50% 12%, rgba(251, 191, 36, 0.26), transparent 18%),
+      linear-gradient(180deg, #16120f 0%, #0f1722 100%);
+  }
 }
