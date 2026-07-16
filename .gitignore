@@ -26,6 +26,8 @@
 
 # Local development notes and build logs
 CLAUDE.md
+AGENTS.md
+*.docx
 *_BuildLog.*
 *_Changes_Log.*
 
