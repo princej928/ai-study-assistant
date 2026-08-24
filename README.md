@@ -2,6 +2,8 @@
 
 StudyForge turns study materials into revision tools in one workflow. Upload a PDF or an image of your notes, then receive an exam-ready summary, flashcards for spaced repetition, and a multiple-choice quiz tailored to your selected difficulty.
 
+**Live application:** [ai-study-assistant-ten-chi.vercel.app](https://ai-study-assistant-ten-chi.vercel.app/)
+
 ## Highlights
 
 - Upload PDFs and images of notes
