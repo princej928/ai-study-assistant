@@ -162,6 +162,14 @@ StudyForge uses a lightweight spaced-repetition schedule. After revealing an ans
 - **Production deployment configuration:** Deploying required configuring MongoDB network access, Cloudinary, Gemini credentials, and Vercel environment variables. This reinforced that external-service configuration is as important as application code.
 - **Protecting user data:** Each document belongs to one user, and dashboard/API requests verify the active user before returning or modifying document data.
 
+## Approach
+
+StudyForge is a full-stack Next.js application that turns uploaded study material into useful revision resources. Users create an account, then upload a PDF or image through a drag-and-drop or file-picker interface. Files are stored securely in Cloudinary, while document data and generated study content are stored in MongoDB.
+
+For text extraction, the app uses `unpdf` for text-based PDFs and Tesseract OCR for scanned images. The extracted content is sent to Google Gemini to generate a summary, flashcards, quiz questions, and personalised study tips. Users can choose short, medium, or long summaries, along with quiz length and difficulty.
+
+Long-running processing is handled in the background with live status updates shown in the interface. The application uses secure sessions and user ownership checks so each user can access only their own documents. It is deployed on Vercel with environment variables for all external services.
+
 ## Scripts
 
 ```bash
