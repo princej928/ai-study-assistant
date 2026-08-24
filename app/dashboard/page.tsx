@@ -1,12 +1,13 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
+import { getCurrentUserId } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
 import Document from "@/models/Document";
+import User from "@/models/User";
 import FileUpload from "@/components/FileUpload";
 import DocumentCard from "@/components/DocumentCard";
 import { Flashcard } from "@/components/FlashcardViewer";
 import { QuizQuestion } from "@/components/QuizPlayer";
+import SignOutButton from "@/components/SignOutButton";
 
 interface DashboardDocument {
   _id: string;
@@ -21,12 +22,11 @@ interface DashboardDocument {
 }
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) redirect("/sign-in");
 
-  const user = await currentUser();
-
   await connectDB();
+  const user = await User.findById(userId).lean();
   const rawDocs = await Document.find({ userId }).sort({ createdAt: -1 }).lean();
   
   // Serialize Mongo documents for Client Components
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
             <span className="text-sm font-medium text-slate-500 hidden sm:inline-block">
               Study Hub
             </span>
-            <UserButton />
+            <SignOutButton />
           </div>
         </div>
       </nav>
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
         <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-600 text-white rounded-3xl p-8 shadow-xl shadow-indigo-100/50 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="space-y-2 text-center md:text-left z-10">
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Welcome back, {user?.firstName || "Student"}! 👋
+              Welcome back, {user?.name || "Student"}! 👋
             </h1>
             <p className="text-indigo-100 max-w-xl">
               Turn your lecture notes, textbooks, and images into clear summaries, interactive flashcards, and personalized practice quizzes instantly.

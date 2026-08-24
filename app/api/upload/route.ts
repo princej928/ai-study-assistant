@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUserId } from "@/lib/auth";
 import cloudinary from "@/lib/cloudinary";
 import connectDB from "@/lib/mongodb";
 import Document from "@/models/Document";
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData = await req.formData();
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const uploadResult = await new Promise<any>((resolve, reject) => {
+  const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
     cloudinary.uploader.upload_stream(
       {
         resource_type: "auto",
@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
       },
       (error, result) => {
         if (error) reject(error);
-        else resolve(result);
+        else if (result?.secure_url) resolve({ secure_url: result.secure_url });
+        else reject(new Error("Cloudinary did not return an uploaded file URL"));
       }
     ).end(buffer);
   });

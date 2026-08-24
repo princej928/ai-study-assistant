@@ -1,5 +1,5 @@
-import { SignIn } from "@clerk/nextjs";
 import AuthShell from "@/components/AuthShell";
+import AuthForm from "@/components/AuthForm";
 
 export default function Page() {
   return (
@@ -9,22 +9,7 @@ export default function Page() {
       footerText="New to StudyForge?"
       footerHref="/sign-up"
       footerLabel="Create an account"
-      authCard={
-        <SignIn
-          path="/sign-in"
-          routing="path"
-          signUpUrl="/sign-up"
-          fallbackRedirectUrl="/dashboard"
-          appearance={{
-            elements: {
-              rootBox: "w-full",
-              card: "shadow-none bg-transparent border-0 p-0",
-              header: "hidden",
-              footer: "hidden",
-            },
-          }}
-        />
-      }
+      authCard={<AuthForm mode="sign-in" />}
     />
   );
 }

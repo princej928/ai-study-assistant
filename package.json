@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.4.2",
     "@google/generative-ai": "^0.24.1",
     "cloudinary": "^2.10.0",
     "crypto-js": "^4.2.0",

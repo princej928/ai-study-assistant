@@ -10,7 +10,7 @@ StudyForge turns study materials into revision tools in one workflow. Upload a P
 - Create flashcards with a built-in spaced-repetition review schedule
 - Generate 5, 10, or 15-question multiple-choice quizzes
 - Choose Easy, Medium, or Hard study-material difficulty
-- Keep each user's study library private with Clerk authentication
+- Keep each user's study library private with built-in email/password authentication
 - Track document-processing progress from upload through completion
 
 ## Tech Stack
@@ -19,7 +19,7 @@ StudyForge turns study materials into revision tools in one workflow. Upload a P
 | --- | --- |
 | Framework | Next.js 16, React 19, TypeScript |
 | Styling | Tailwind CSS 4 |
-| Authentication | Clerk |
+| Authentication | Built-in email/password sessions |
 | Database | MongoDB with Mongoose |
 | File storage | Cloudinary |
 | Study-content generation | Google Gemini 2.5 Flash |
@@ -32,7 +32,7 @@ StudyForge turns study materials into revision tools in one workflow. Upload a P
 ```mermaid
 flowchart LR
     U[Student] --> W[Next.js App]
-    W --> A[Clerk Authentication]
+    W --> A[Built-in Authentication]
     W -->|Upload PDF or image| UP[Upload API]
     UP --> C[Cloudinary]
     UP --> M[(MongoDB)]
@@ -68,12 +68,12 @@ flowchart LR
 app/
   api/                  Route handlers for uploads, processing, and study tools
   dashboard/            Authenticated study library
-  sign-in/              Clerk sign-in page
-  sign-up/              Clerk sign-up page
+  sign-in/              Sign-in page
+  sign-up/              Account creation page
 components/             Upload, document, flashcard, and quiz interfaces
 lib/                    MongoDB, Cloudinary, and Gemini clients
 models/                 Mongoose document schema
-middleware.ts           Route protection with Clerk
+lib/auth.ts              Password hashing and signed sessions
 ```
 
 ## Getting Started
@@ -82,7 +82,6 @@ middleware.ts           Route protection with Clerk
 
 - Node.js 20 or newer
 - A MongoDB database
-- A Clerk application
 - A Cloudinary account
 - A Google Gemini API key
 
@@ -99,9 +98,8 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```env
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
+# Authentication (use a long, random value in production)
+AUTH_SECRET=
 
 # MongoDB
 MONGODB_URI=
@@ -121,7 +119,7 @@ GEMINI_API_KEY=
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Unauthenticated visitors are directed to the sign-in page.
+Open [http://localhost:3000](http://localhost:3000). Create an account, then sign in to access your study library.
 
 ## API Overview
 
@@ -164,7 +162,7 @@ npm run lint     # Run ESLint
 
 ## Deployment
 
-Deploy to a Node.js-compatible host such as Vercel. Add the same environment variables from `.env.local` to the deployment provider, including the Clerk keys, MongoDB connection string, Cloudinary credentials, and Gemini API key.
+Deploy to a Node.js-compatible host such as Vercel. Add the same environment variables from `.env.local` to the deployment provider, including `AUTH_SECRET`, the MongoDB connection string, Cloudinary credentials, and Gemini API key.
 
 The document-processing route uses the Node.js runtime because PDF extraction and OCR rely on Node-compatible packages.
 
