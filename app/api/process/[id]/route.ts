@@ -41,6 +41,7 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const quizCount = Number(body.quizCount) || 5;
     const difficulty = body.difficulty || "Medium";
+    const summaryLength = body.summaryLength || "Medium";
 
     await connectDB();
 
@@ -58,6 +59,7 @@ export async function POST(
     await Document.findByIdAndUpdate(id, {
       status: "extracting",
       error: "",
+      summaryLength,
     });
 
     // Run the long-running processing flow in the background
@@ -105,6 +107,15 @@ export async function POST(
 
         // 3. Generate Summary using Gemini
         const inputText = extractedText.slice(0, 12000);
+        let lengthRule = "";
+        if (summaryLength === "Short") {
+          lengthRule = "- Keep the summary short (around 80 to 120 words)\n- Focus on key high-level bullet points only";
+        } else if (summaryLength === "Long") {
+          lengthRule = "- Keep the summary detailed (around 350 to 450 words)\n- Provide a section-by-section breakdown of the key concepts";
+        } else {
+          lengthRule = "- Keep the summary around 150 to 250 words\n- Focus on the most important points";
+        }
+
         const summaryPrompt = `
 You are helping a student study from their notes.
 
@@ -114,10 +125,9 @@ Make the summary of ${difficulty} difficulty in terms of depth.
 
 Rules:
 - Use simple language
-- Focus on the most important points
 - Keep it well-structured
 - Avoid unnecessary filler
-- Keep the summary around 150 to 250 words
+${lengthRule}
 
 Study material:
 ${inputText}

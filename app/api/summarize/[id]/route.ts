@@ -40,6 +40,17 @@ export async function POST(
 
     const inputText = doc.extractedText.slice(0, 12000);
 
+    const summaryLength = doc.summaryLength || "Medium";
+
+    let lengthRule = "";
+    if (summaryLength === "Short") {
+      lengthRule = "- Keep the summary short (around 80 to 120 words)\n- Focus on key high-level bullet points only";
+    } else if (summaryLength === "Long") {
+      lengthRule = "- Keep the summary detailed (around 350 to 450 words)\n- Provide a section-by-section breakdown of the key concepts";
+    } else {
+      lengthRule = "- Keep the summary around 150 to 250 words\n- Focus on the most important points";
+    }
+
     const prompt = `
 You are helping a student study from their notes.
 
@@ -48,10 +59,9 @@ Keep it easy to revise from.
 
 Rules:
 - Use simple language
-- Focus on the most important points
 - Keep it well-structured
 - Avoid unnecessary filler
-- Keep the summary around 150 to 250 words
+${lengthRule}
 
 Study material:
 ${inputText}

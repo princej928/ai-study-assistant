@@ -28,6 +28,7 @@ const DocumentSchema = new mongoose.Schema({
   fileType: { type: String, required: true },
   extractedText: { type: String, default: "" },
   summary: { type: String, default: "" },
+  summaryLength: { type: String, default: "Medium" },
   flashcards: { type: [FlashcardSchema], default: [] },
   quiz: { type: [QuizQuestionSchema], default: [] },
   status: { type: String, default: "uploaded" },

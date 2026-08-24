@@ -8,6 +8,7 @@ export default function FileUpload() {
   const [message, setMessage] = useState("");
   const [quizCount, setQuizCount] = useState(5);
   const [difficulty, setDifficulty] = useState("Medium");
+  const [summaryLength, setSummaryLength] = useState("Medium");
   const router = useRouter();
 
   const handleUpload = async (file: File) => {
@@ -29,7 +30,7 @@ export default function FileUpload() {
         const processRes = await fetch(`/api/process/${data.documentId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ quizCount, difficulty }),
+          body: JSON.stringify({ quizCount, difficulty, summaryLength }),
         });
         if (!processRes.ok) throw new Error("Could not initiate background processing.");
         
@@ -121,12 +122,25 @@ export default function FileUpload() {
   return (
     <div className="w-full max-w-xl mx-auto">
       {/* Quiz & Study Settings */}
-      <div className="mb-6 p-4 bg-white/70 border border-slate-100 rounded-2xl flex flex-col sm:flex-row gap-4 justify-between items-center shadow-sm backdrop-blur-sm">
-        <div className="flex flex-col gap-1 text-left w-full sm:w-auto">
+      <div className="mb-6 p-4 bg-white/70 border border-slate-100 rounded-2xl flex flex-col lg:flex-row gap-4 justify-between items-center shadow-sm backdrop-blur-sm">
+        <div className="flex flex-col gap-1 text-left w-full lg:w-auto">
           <span className="text-slate-700 font-semibold text-sm">Study Material Settings</span>
           <span className="text-slate-400 text-xs">Configure the generation of study resources</span>
         </div>
-        <div className="flex gap-3 w-full sm:w-auto justify-end">
+        <div className="flex flex-wrap gap-3 w-full lg:w-auto justify-end">
+          <div className="flex flex-col gap-1 text-left">
+            <label className="text-slate-500 font-semibold text-[10px] uppercase tracking-wider">Summary Length</label>
+            <select
+              value={summaryLength}
+              onChange={(e) => setSummaryLength(e.target.value)}
+              disabled={uploading}
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-indigo-500 transition-all cursor-pointer disabled:cursor-not-allowed"
+            >
+              <option value="Short">Short (~100 words)</option>
+              <option value="Medium">Medium (~200 words)</option>
+              <option value="Long">Long (~400 words)</option>
+            </select>
+          </div>
           <div className="flex flex-col gap-1 text-left">
             <label className="text-slate-500 font-semibold text-[10px] uppercase tracking-wider">Quiz Questions</label>
             <select
