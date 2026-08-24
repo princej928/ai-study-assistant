@@ -154,6 +154,14 @@ StudyForge uses a lightweight spaced-repetition schedule. After revealing an ans
 | `completed` | Study material is ready |
 | `failed` | Processing stopped; the error is stored with the document |
 
+## Challenges & What I Learned
+
+- **Supporting different document types:** PDFs can contain selectable text, while scanned images need OCR. The application uses `unpdf` for PDF extraction and Tesseract for image-based text, with separate processing paths for each file type.
+- **Managing long-running processing:** OCR and AI generation can take time. Background processing, document status updates, and client-side polling keep users informed instead of leaving the interface frozen.
+- **Making AI responses reliable:** Gemini can return inconsistent output, especially for flashcards and quizzes. Structured JSON prompts and Zod validation are used before generated content is saved to MongoDB.
+- **Production deployment configuration:** Deploying required configuring MongoDB network access, Cloudinary, Gemini credentials, and Vercel environment variables. This reinforced that external-service configuration is as important as application code.
+- **Protecting user data:** Each document belongs to one user, and dashboard/API requests verify the active user before returning or modifying document data.
+
 ## Scripts
 
 ```bash
