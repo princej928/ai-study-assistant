@@ -36,6 +36,7 @@ export async function GET(
         status: doc.status,
         error: doc.error,
         summary: doc.summary,
+        improvementSuggestions: doc.improvementSuggestions,
         flashcards: doc.flashcards,
         quiz: doc.quiz,
       },

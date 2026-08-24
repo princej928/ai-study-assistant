@@ -20,6 +20,7 @@ const QuizQuestionSchema = z.object({
   correctAnswer: z.string().min(1, "Correct answer cannot be empty"),
 });
 const QuizArraySchema = z.array(QuizQuestionSchema);
+const SuggestionsSchema = z.array(z.string().min(1)).min(3).max(5);
 
 const DEFAULT_EASE_FACTOR = 2.5;
 const DEFAULT_INTERVAL_DAYS = 1;
@@ -141,7 +142,7 @@ ${inputText}
           status: "generating_assets",
         });
 
-        // 4. Generate Flashcards & Quiz (Concurrently)
+        // 4. Generate flashcards, quiz, and targeted study suggestions concurrently.
         const flashcardsPrompt = `
 You are helping a student study from their notes.
 
@@ -171,7 +172,18 @@ Study material:
 ${inputText}
 `;
 
-        const [flashcardsRes, quizRes] = await Promise.all([
+        const suggestionsPrompt = `
+You are a supportive study coach. Review the following study material and return 3 to 5 practical improvement suggestions.
+
+Each suggestion must identify a topic or skill to focus on and give one concrete revision action. Do not claim to know the student's performance; base the suggestions only on the material's complexity and important concepts.
+
+Return only a JSON array of short strings.
+
+Study material:
+${inputText}
+`;
+
+        const [flashcardsRes, quizRes, suggestionsRes] = await Promise.all([
           geminiModel.generateContent({
             contents: [{ role: 'user', parts: [{ text: flashcardsPrompt }] }],
             generationConfig: {
@@ -183,7 +195,13 @@ ${inputText}
             generationConfig: {
               responseMimeType: "application/json",
             }
-          })
+          }),
+          geminiModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: suggestionsPrompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+            }
+          }),
         ]);
 
         // Parse and validate flashcards with Zod
@@ -210,10 +228,19 @@ ${inputText}
         }
         const quiz = quizVal.data;
 
+        const suggestionsVal = SuggestionsSchema.safeParse(
+          JSON.parse(suggestionsRes.response.text().trim())
+        );
+        if (!suggestionsVal.success) {
+          console.error("Suggestions validation error details:", suggestionsVal.error);
+          throw new Error("AI generated improvement suggestions did not match the required format.");
+        }
+
         // Update database with completed status and all generated assets
         await Document.findByIdAndUpdate(id, {
           flashcards,
           quiz,
+          improvementSuggestions: suggestionsVal.data,
           status: "completed",
         });
 

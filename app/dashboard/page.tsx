@@ -16,6 +16,7 @@ interface DashboardDocument {
   fileType: string;
   extractedText: string;
   summary: string;
+  improvementSuggestions: string[];
   flashcards: Flashcard[];
   quiz: QuizQuestion[];
   status: string;
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
     fileType: doc.fileType,
     extractedText: doc.extractedText || "",
     summary: doc.summary || "",
+    improvementSuggestions: doc.improvementSuggestions || [],
     flashcards: doc.flashcards || [],
     quiz: doc.quiz || [],
     status: doc.status || "uploaded",

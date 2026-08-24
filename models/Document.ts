@@ -29,6 +29,7 @@ const DocumentSchema = new mongoose.Schema({
   extractedText: { type: String, default: "" },
   summary: { type: String, default: "" },
   summaryLength: { type: String, default: "Medium" },
+  improvementSuggestions: { type: [String], default: [] },
   flashcards: { type: [FlashcardSchema], default: [] },
   quiz: { type: [QuizQuestionSchema], default: [] },
   status: { type: String, default: "uploaded" },

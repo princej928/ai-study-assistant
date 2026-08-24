@@ -12,6 +12,7 @@ interface Doc {
   fileType: string;
   extractedText: string;
   summary: string;
+  improvementSuggestions: string[];
   flashcards: Flashcard[];
   quiz?: QuizQuestion[];
   status: string;
@@ -23,12 +24,13 @@ interface DocumentCardProps {
 
 export default function DocumentCard({ document }: DocumentCardProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"summary" | "flashcards" | "quiz" | "text">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "suggestions" | "flashcards" | "quiz" | "text">("summary");
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [summary, setSummary] = useState(document.summary || "");
+  const [improvementSuggestions] = useState<string[]>(document.improvementSuggestions || []);
   const [flashcards, setFlashcards] = useState<Flashcard[]>(document.flashcards || []);
   const [quiz, setQuiz] = useState<QuizQuestion[]>(document.quiz || []);
 
@@ -184,7 +186,7 @@ export default function DocumentCard({ document }: DocumentCardProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-100 mt-4">
+      <div className="flex overflow-x-auto border-b border-gray-100 mt-4">
         <button
           onClick={() => setActiveTab("summary")}
           className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 ${
@@ -197,6 +199,19 @@ export default function DocumentCard({ document }: DocumentCardProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Summary
+        </button>
+        <button
+          onClick={() => setActiveTab("suggestions")}
+          className={`flex shrink-0 items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 ${
+            activeTab === "suggestions"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Study Tips
         </button>
         <button
           onClick={() => setActiveTab("flashcards")}
@@ -266,6 +281,28 @@ export default function DocumentCard({ document }: DocumentCardProps) {
                   </svg>
                   Generate Summary
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "suggestions" && (
+          <div className="flex-1">
+            {improvementSuggestions.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-500">Use these focused actions to strengthen your revision.</p>
+                <ul className="space-y-3">
+                  {improvementSuggestions.map((suggestion, index) => (
+                    <li key={suggestion} className="flex gap-3 rounded-xl border border-amber-100 bg-amber-50/50 p-4 text-sm leading-relaxed text-slate-700">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">{index + 1}</span>
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/30 px-6 text-center text-sm text-gray-400">
+                Process this document again to generate personalised study tips.
               </div>
             )}
           </div>

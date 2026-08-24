@@ -7,6 +7,7 @@ StudyForge turns study materials into revision tools in one workflow. Upload a P
 - Upload PDFs and images of notes
 - Extract text from PDFs and run OCR on images
 - Generate concise, revision-ready summaries
+- Receive AI-generated study tips that identify concepts to revisit and concrete revision actions
 - Create flashcards with a built-in spaced-repetition review schedule
 - Generate 5, 10, or 15-question multiple-choice quizzes
 - Choose Easy, Medium, or Hard study-material difficulty
